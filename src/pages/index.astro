@@ -1,0 +1,352 @@
+---
+import '../styles/global.css';
+import { loadProblems } from '../lib/data';
+
+const problems = loadProblems();
+const exampleNames = problems.map((p) => p.name);
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Feminist Theory into Practice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="masthead">
+        <p class="eyebrow">A working catalog of responses</p>
+        <h1>Feminist Theory <span class="into">into</span> Practice</h1>
+        <p class="lede">
+          Name a problem of gender inequality. Get back one real thing people have
+          built, organized, made, or passed to confront it — an organization, a law,
+          an art project, a campaign. One at a time, so each one gets your attention.
+        </p>
+      </header>
+
+      <form id="ask" class="ask" autocomplete="off">
+        <label class="ask-label" for="q">Name a problem.</label>
+        <div class="ask-row">
+          <input
+            id="q"
+            name="q"
+            type="text"
+            placeholder="e.g. femicide, pay inequality, misogynoir…"
+            required
+          />
+          <button type="submit" id="go">Show me one response</button>
+        </div>
+        <p class="hint">
+          In the catalog so far:
+          {exampleNames.map((n, i) => (
+            <><button type="button" class="chip" data-q={n}>{n}</button>{i < exampleNames.length - 1 ? ' ' : ''}</>
+          ))}
+        </p>
+      </form>
+
+      <section id="result" class="result" hidden aria-live="polite"></section>
+
+      <footer class="foot">
+        <p>
+          A local prototype. Entries are curated and verified by hand.
+          <a href="/admin">Catalog admin</a>
+        </p>
+      </footer>
+    </main>
+
+    <template id="card-tpl">
+      <article class="card">
+        <p class="stamp"><span class="stamp-type"></span></p>
+        <h2 class="card-name"></h2>
+        <p class="card-meta">
+          <span class="card-problem"></span>
+          <span class="card-location"></span>
+        </p>
+        <p class="card-desc"></p>
+        <p class="card-actions">
+          <a class="card-link" target="_blank" rel="noopener">Visit the source ↗</a>
+          <button type="button" class="again" id="again">Show me another</button>
+        </p>
+        <p class="card-count"></p>
+      </article>
+    </template>
+
+    <style>
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 3.5rem 1.25rem 4rem;
+      }
+      .masthead {
+        margin-bottom: 2.75rem;
+      }
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--marigold);
+        margin: 0 0 0.75rem;
+      }
+      h1 {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(2.4rem, 7vw, 3.6rem);
+        line-height: 1.02;
+        letter-spacing: -0.015em;
+        margin: 0 0 1.1rem;
+        text-wrap: balance;
+      }
+      h1 .into {
+        font-style: italic;
+        font-weight: 400;
+        font-family: var(--font-body);
+        color: var(--poster-pink);
+        padding: 0 0.1em;
+      }
+      .lede {
+        font-size: 1.08rem;
+        color: var(--ink-soft);
+        max-width: 56ch;
+        margin: 0;
+      }
+
+      .ask-label {
+        display: block;
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 1.35rem;
+        margin-bottom: 0.6rem;
+      }
+      .ask-row {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+      #q {
+        flex: 1 1 260px;
+        font-family: var(--font-body);
+        font-size: 1.05rem;
+        padding: 0.75rem 0.9rem;
+        border: 2px solid var(--ink);
+        border-radius: 0;
+        background: var(--card);
+        color: var(--ink);
+      }
+      #go,
+      .again {
+        font-family: var(--font-mono);
+        font-size: 0.92rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        padding: 0.75rem 1.2rem;
+        background: var(--ink);
+        color: var(--paper);
+        border: 2px solid var(--ink);
+        cursor: pointer;
+      }
+      #go:hover,
+      .again:hover {
+        background: var(--poster-pink);
+        border-color: var(--poster-pink);
+        color: #fff;
+      }
+      .hint {
+        margin-top: 1rem;
+        font-size: 0.86rem;
+        color: var(--ink-soft);
+        line-height: 2.1;
+      }
+      .chip {
+        font-family: var(--font-mono);
+        font-size: 0.74rem;
+        padding: 0.18rem 0.55rem;
+        margin-right: 0.3rem;
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--ink-soft);
+        cursor: pointer;
+      }
+      .chip:hover {
+        border-color: var(--poster-pink);
+        color: var(--poster-pink);
+      }
+
+      .result {
+        margin-top: 2.5rem;
+      }
+      .card {
+        background: var(--card);
+        border: 2.5px solid var(--ink);
+        box-shadow: 10px 10px 0 var(--poster-pink);
+        padding: 2rem 2rem 1.6rem;
+        animation: rise 0.35s ease both;
+      }
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .stamp {
+        margin: 0 0 0.9rem;
+      }
+      .stamp-type {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.74rem;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--marigold);
+        border: 1.5px solid var(--marigold);
+        padding: 0.25rem 0.6rem;
+        transform: rotate(-1.6deg);
+      }
+      .card-name {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(1.5rem, 4.5vw, 2.1rem);
+        line-height: 1.08;
+        margin: 0 0 0.5rem;
+      }
+      .card-meta {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+        margin: 0 0 1rem;
+      }
+      .card-problem::before {
+        content: 'responds to: ';
+        color: var(--poster-pink);
+      }
+      .card-location:not(:empty)::before {
+        content: ' · ';
+      }
+      .card-desc {
+        margin: 0 0 1.4rem;
+        white-space: pre-line;
+      }
+      .card-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin: 0;
+      }
+      .card-link {
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--poster-pink);
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
+      }
+      .card-count {
+        margin: 1rem 0 0;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--ink-soft);
+      }
+      .note {
+        background: var(--card);
+        border: 2px dashed var(--line);
+        padding: 1.5rem 1.75rem;
+        color: var(--ink-soft);
+      }
+      .note strong {
+        color: var(--ink);
+      }
+
+      .foot {
+        margin-top: 4rem;
+        border-top: 1px solid var(--line);
+        padding-top: 1rem;
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+      }
+      .foot a {
+        color: var(--ink-soft);
+      }
+    </style>
+
+    <script>
+      const form = document.getElementById('ask');
+      const input = document.getElementById('q');
+      const result = document.getElementById('result');
+      const tpl = document.getElementById('card-tpl');
+
+      let currentQuery = '';
+      let seen = [];
+
+      document.querySelectorAll('.chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          input.value = chip.dataset.q;
+          form.requestSubmit();
+        });
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const q = input.value.trim();
+        if (!q) return;
+        if (q !== currentQuery) {
+          currentQuery = q;
+          seen = [];
+        }
+        fetchOne();
+      });
+
+      async function fetchOne() {
+        const params = new URLSearchParams({ q: currentQuery, seen: seen.join(',') });
+        const res = await fetch(`/api/match?${params}`);
+        const data = await res.json();
+        result.hidden = false;
+
+        if (data.noMatch) {
+          result.innerHTML = `<div class="note"><strong>Nothing in the catalog yet for “${esc(
+            currentQuery
+          )}.”</strong><br/>Try one of the problems listed above — or add this one through the admin page.</div>`;
+          return;
+        }
+        if (data.exhausted) {
+          seen = [];
+          result.innerHTML = `<div class="note"><strong>You’ve seen all ${data.total} responses for this problem.</strong><br/>Ask again to start over.</div>`;
+          return;
+        }
+
+        seen.push(data.solution.id);
+        const node = tpl.content.cloneNode(true);
+        node.querySelector('.stamp-type').textContent = data.solution.type;
+        node.querySelector('.card-name').textContent = data.solution.name;
+        node.querySelector('.card-problem').textContent = data.matchedProblem.name;
+        node.querySelector('.card-location').textContent = data.solution.location || '';
+        node.querySelector('.card-desc').textContent = data.solution.description;
+        const link = node.querySelector('.card-link');
+        if (data.solution.url) {
+          link.href = data.solution.url;
+        } else {
+          link.remove();
+        }
+        node.querySelector('.card-count').textContent = `${seen.length} of ${data.total} responses shown for this problem`;
+        result.replaceChildren(node);
+        document.getElementById('again').addEventListener('click', fetchOne);
+      }
+
+      function esc(s) {
+        return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+    </script>
+  </body>
+</html>

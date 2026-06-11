@@ -1,0 +1,312 @@
+---
+import '../../styles/global.css';
+import { isAuthed } from '../../lib/auth';
+import { loadProblems, loadSolutions } from '../../lib/data';
+
+const authed = isAuthed(Astro.cookies);
+const error = Astro.url.searchParams.get('error');
+const saved = Astro.url.searchParams.get('saved');
+const problems = authed ? loadProblems() : [];
+const solutions = authed ? loadSolutions() : [];
+const types = ['organization', 'law', 'proposed law', 'art project', 'campaign', 'institution', 'program', 'event', 'other'];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Catalog admin · Feminist Theory into Practice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top">
+        <h1>Catalog admin</h1>
+        <p><a href="/">← Back to the site</a></p>
+      </header>
+
+      {!authed && (
+        <section class="panel login">
+          <h2>Sign in</h2>
+          {error && <p class="msg err">That password didn't match. Try again.</p>}
+          <form method="post" action="/api/admin/login">
+            <label for="password">Admin password</label>
+            <input id="password" name="password" type="password" required autofocus />
+            <button type="submit">Sign in</button>
+          </form>
+          <p class="small">The password is set in the <code>.env</code> file as <code>ADMIN_PASSWORD</code>.</p>
+        </section>
+      )}
+
+      {authed && (
+        <>
+          {saved && <p class="msg ok">Saved. The site updates immediately.</p>}
+          {error === 'solution-problems' && <p class="msg err">A response needs at least one related problem checked.</p>}
+
+          <div class="cols">
+            <section class="panel">
+              <h2>Add a problem</h2>
+              <form method="post" action="/api/admin/problem">
+                <label for="p-name">Name</label>
+                <input id="p-name" name="name" required placeholder="e.g. Femicide" />
+
+                <label for="p-aliases">Aliases <span class="small">(comma-separated other names people might type)</span></label>
+                <input id="p-aliases" name="aliases" placeholder="e.g. gender-based killing, killing of women" />
+
+                <label for="p-tags">Tags <span class="small">(comma-separated themes for matching)</span></label>
+                <input id="p-tags" name="tags" placeholder="e.g. violence, murder, gender" />
+
+                <label for="p-framing">Framing <span class="small">(your definition — also used for matching)</span></label>
+                <textarea id="p-framing" name="framing" rows="4" placeholder="What this problem is, in your words."></textarea>
+
+                <button type="submit">Save problem</button>
+              </form>
+            </section>
+
+            <section class="panel">
+              <h2>Add a response</h2>
+              <form method="post" action="/api/admin/solution">
+                <label for="s-name">Name</label>
+                <input id="s-name" name="name" required placeholder="e.g. Ni Una Menos" />
+
+                <label for="s-type">Type</label>
+                <select id="s-type" name="type">
+                  {types.map((t) => <option value={t}>{t}</option>)}
+                </select>
+
+                <label for="s-url">Link <span class="small">(verify it works before saving)</span></label>
+                <input id="s-url" name="url" type="url" placeholder="https://…" />
+
+                <label for="s-location">Location / scope</label>
+                <input id="s-location" name="location" placeholder="e.g. Argentina → international" />
+
+                <label for="s-desc">Description</label>
+                <textarea id="s-desc" name="description" rows="4" placeholder="What it is and what it does."></textarea>
+
+                <fieldset>
+                  <legend>Responds to which problems?</legend>
+                  {problems.map((p) => (
+                    <label class="check">
+                      <input type="checkbox" name="relatedProblems" value={p.slug} /> {p.name}
+                    </label>
+                  ))}
+                </fieldset>
+
+                <button type="submit">Save response</button>
+              </form>
+            </section>
+          </div>
+
+          <section class="panel">
+            <h2>Problems in the catalog ({problems.length})</h2>
+            <ul class="list">
+              {problems.map((p) => (
+                <li>
+                  <strong>{p.name}</strong>
+                  <span class="small mono">{p.slug}</span>
+                  <form method="post" action="/api/admin/delete" class="inline" data-confirm={`Delete the problem “${p.name}”?`}>
+                    <input type="hidden" name="kind" value="problem" />
+                    <input type="hidden" name="id" value={p.slug} />
+                    <button type="submit" class="danger">delete</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section class="panel">
+            <h2>Responses in the catalog ({solutions.length})</h2>
+            <ul class="list">
+              {solutions.map((s) => (
+                <li>
+                  <strong>{s.name}</strong>
+                  <span class="small mono">{s.type} · {s.relatedProblems.join(', ')}</span>
+                  <form method="post" action="/api/admin/delete" class="inline" data-confirm={`Delete the response “${s.name}”?`}>
+                    <input type="hidden" name="kind" value="solution" />
+                    <input type="hidden" name="id" value={s.id} />
+                    <button type="submit" class="danger">delete</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <form method="post" action="/api/admin/logout">
+            <button type="submit" class="quiet">Sign out</button>
+          </form>
+        </>
+      )}
+    </main>
+
+    <style>
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      h1 {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 2rem;
+        margin: 0 0 1.5rem;
+      }
+      h2 {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 1.15rem;
+        margin: 0 0 1rem;
+      }
+      .cols {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.25rem;
+      }
+      .panel {
+        background: var(--card);
+        border: 2px solid var(--ink);
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+      }
+      .login {
+        max-width: 420px;
+      }
+      label {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        margin: 0.9rem 0 0.3rem;
+      }
+      input[type='text'],
+      input[type='url'],
+      input[type='password'],
+      input:not([type]),
+      select,
+      textarea {
+        width: 100%;
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        padding: 0.5rem 0.6rem;
+        border: 1.5px solid var(--ink);
+        background: #fff;
+        color: var(--ink);
+      }
+      fieldset {
+        margin: 1rem 0 0;
+        border: 1.5px solid var(--line);
+        padding: 0.75rem 1rem;
+      }
+      legend {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        padding: 0 0.4rem;
+      }
+      .check {
+        display: block;
+        font-family: var(--font-body);
+        font-size: 0.92rem;
+        margin: 0.25rem 0;
+      }
+      .check input {
+        width: auto;
+        margin-right: 0.4rem;
+      }
+      button {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        padding: 0.6rem 1.1rem;
+        margin-top: 1.1rem;
+        background: var(--ink);
+        color: var(--paper);
+        border: 2px solid var(--ink);
+        cursor: pointer;
+      }
+      button:hover {
+        background: var(--poster-pink);
+        border-color: var(--poster-pink);
+      }
+      .danger {
+        background: transparent;
+        color: var(--poster-pink-dark);
+        border: 1px solid var(--line);
+        padding: 0.15rem 0.5rem;
+        font-size: 0.72rem;
+        margin: 0;
+      }
+      .danger:hover {
+        background: var(--poster-pink-dark);
+        color: #fff;
+      }
+      .quiet {
+        background: transparent;
+        color: var(--ink-soft);
+        border-color: var(--line);
+      }
+      .list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .list li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid var(--line);
+        flex-wrap: wrap;
+      }
+      .inline {
+        margin-left: auto;
+      }
+      .small {
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+        font-weight: 400;
+      }
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .msg {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        padding: 0.6rem 0.9rem;
+        border: 1.5px solid;
+      }
+      .msg.ok {
+        color: #1f6b3a;
+        border-color: #1f6b3a;
+        background: #eaf5ee;
+      }
+      .msg.err {
+        color: var(--poster-pink-dark);
+        border-color: var(--poster-pink-dark);
+        background: #fbecf2;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.85em;
+        background: var(--paper);
+        padding: 0.1em 0.3em;
+      }
+    </style>
+
+    <script>
+      document.querySelectorAll('form[data-confirm]').forEach((f) => {
+        f.addEventListener('submit', (e) => {
+          if (!confirm(f.dataset.confirm)) e.preventDefault();
+        });
+      });
+    </script>
+  </body>
+</html>

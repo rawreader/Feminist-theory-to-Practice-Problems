@@ -1,0 +1,63 @@
+/* ------------------------------------------------------------------
+   Feminist Theory into Practice — design tokens
+   Palette drawn from feminist print culture: lilac-washed paper,
+   deep plum ink, poster pink, marigold stamp.
+------------------------------------------------------------------- */
+:root {
+  --paper: #f5f1f7;
+  --ink: #2a1e33;
+  --ink-soft: #5d5168;
+  --poster-pink: #c2255c;
+  --poster-pink-dark: #9c1d4a;
+  --marigold: #b97114;
+  --card: #fffdfa;
+  --line: #d9d0e0;
+
+  --font-display: 'Bricolage Grotesque', 'Arial Black', system-ui, sans-serif;
+  --font-body: 'Source Serif 4', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--poster-pink);
+}
+
+::selection {
+  background: var(--poster-pink);
+  color: #fff;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--poster-pink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
