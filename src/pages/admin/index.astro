@@ -3,9 +3,12 @@ import '../../styles/global.css';
 import { isAuthed } from '../../lib/auth';
 import { loadProblems, loadSolutions } from '../../lib/data';
 
-const authed = isAuthed(Astro.cookies);
-const error = Astro.url.searchParams.get('error');
-const saved = Astro.url.searchParams.get('saved');
+// On GitHub Pages (static build) there is no server, so the admin cannot
+// run there. It renders a notice instead. Editing happens locally.
+const isStatic = process.env.DEPLOY_TARGET === 'static';
+const authed = !isStatic && isAuthed(Astro.cookies);
+const error = isStatic ? null : Astro.url.searchParams.get('error');
+const saved = isStatic ? null : Astro.url.searchParams.get('saved');
 const problems = authed ? loadProblems() : [];
 const solutions = authed ? loadSolutions() : [];
 const types = ['organization', 'law', 'proposed law', 'art project', 'campaign', 'institution', 'program', 'event', 'other'];
@@ -30,7 +33,18 @@ const types = ['organization', 'law', 'proposed law', 'art project', 'campaign',
         <p><a href="/">← Back to the site</a></p>
       </header>
 
-      {!authed && (
+      {isStatic && (
+        <section class="panel login">
+          <h2>The admin lives on your machine</h2>
+          <p>
+            This public site is a read-only exhibition of the catalog. To add or
+            edit entries, run the project locally (<code>npm run dev</code>) and
+            open the admin there. Push your changes to publish them here.
+          </p>
+        </section>
+      )}
+
+      {!authed && !isStatic && (
         <section class="panel login">
           <h2>Sign in</h2>
           {error && <p class="msg err">That password didn't match. Try again.</p>}

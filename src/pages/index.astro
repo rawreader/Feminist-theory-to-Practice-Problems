@@ -4,6 +4,9 @@ import { loadProblems } from '../lib/data';
 
 const problems = loadProblems();
 const exampleNames = problems.map((p) => p.name);
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + '/';
 ---
 
 <html lang="en">
@@ -55,7 +58,7 @@ const exampleNames = problems.map((p) => p.name);
       <footer class="foot">
         <p>
           A local prototype. Entries are curated and verified by hand.
-          <a href="/admin">Catalog admin</a>
+          <a href={base + 'admin'}>Catalog admin</a>
         </p>
       </footer>
     </main>
@@ -282,13 +285,28 @@ const exampleNames = problems.map((p) => p.name);
     </style>
 
     <script>
+      import { findCandidates, pickOne } from '../lib/match';
+
       const form = document.getElementById('ask');
       const input = document.getElementById('q');
       const result = document.getElementById('result');
       const tpl = document.getElementById('card-tpl');
 
+      const base = import.meta.env.BASE_URL.endsWith('/')
+        ? import.meta.env.BASE_URL
+        : import.meta.env.BASE_URL + '/';
+
+      let catalog = null;
       let currentQuery = '';
-      let seen = [];
+      let seen = new Set();
+
+      async function getCatalog() {
+        if (!catalog) {
+          const res = await fetch(base + 'catalog.json');
+          catalog = await res.json();
+        }
+        return catalog;
+      }
 
       document.querySelectorAll('.chip').forEach((chip) => {
         chip.addEventListener('click', () => {
@@ -303,45 +321,46 @@ const exampleNames = problems.map((p) => p.name);
         if (!q) return;
         if (q !== currentQuery) {
           currentQuery = q;
-          seen = [];
+          seen = new Set();
         }
-        fetchOne();
+        showOne();
       });
 
-      async function fetchOne() {
-        const params = new URLSearchParams({ q: currentQuery, seen: seen.join(',') });
-        const res = await fetch(`/api/match?${params}`);
-        const data = await res.json();
+      async function showOne() {
+        const { problems, solutions } = await getCatalog();
+        const candidates = findCandidates(currentQuery, problems, solutions);
         result.hidden = false;
 
-        if (data.noMatch) {
+        if (candidates.length === 0) {
           result.innerHTML = `<div class="note"><strong>Nothing in the catalog yet for “${esc(
             currentQuery
           )}.”</strong><br/>Try one of the problems listed above — or add this one through the admin page.</div>`;
           return;
         }
-        if (data.exhausted) {
-          seen = [];
-          result.innerHTML = `<div class="note"><strong>You’ve seen all ${data.total} responses for this problem.</strong><br/>Ask again to start over.</div>`;
+
+        const pick = pickOne(candidates, seen);
+        if (!pick) {
+          seen = new Set();
+          result.innerHTML = `<div class="note"><strong>You’ve seen all ${candidates.length} responses for this problem.</strong><br/>Ask again to start over.</div>`;
           return;
         }
 
-        seen.push(data.solution.id);
+        seen.add(pick.solution.id);
         const node = tpl.content.cloneNode(true);
-        node.querySelector('.stamp-type').textContent = data.solution.type;
-        node.querySelector('.card-name').textContent = data.solution.name;
-        node.querySelector('.card-problem').textContent = data.matchedProblem.name;
-        node.querySelector('.card-location').textContent = data.solution.location || '';
-        node.querySelector('.card-desc').textContent = data.solution.description;
+        node.querySelector('.stamp-type').textContent = pick.solution.type;
+        node.querySelector('.card-name').textContent = pick.solution.name;
+        node.querySelector('.card-problem').textContent = pick.matchedProblem.name;
+        node.querySelector('.card-location').textContent = pick.solution.location || '';
+        node.querySelector('.card-desc').textContent = pick.solution.description;
         const link = node.querySelector('.card-link');
-        if (data.solution.url) {
-          link.href = data.solution.url;
+        if (pick.solution.url) {
+          link.href = pick.solution.url;
         } else {
           link.remove();
         }
-        node.querySelector('.card-count').textContent = `${seen.length} of ${data.total} responses shown for this problem`;
+        node.querySelector('.card-count').textContent = `${seen.size} of ${candidates.length} responses shown for this problem`;
         result.replaceChildren(node);
-        document.getElementById('again').addEventListener('click', fetchOne);
+        document.getElementById('again').addEventListener('click', showOne);
       }
 
       function esc(s) {

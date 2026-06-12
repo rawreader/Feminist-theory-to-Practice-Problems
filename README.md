@@ -77,6 +77,31 @@ not magic: if you want a query like "misogynoir" to catch a response, make
 sure the response is linked to a problem whose name, aliases, tags, or
 framing contain related words.
 
+## Publishing to GitHub Pages
+
+The repository includes a workflow (`.github/workflows/deploy.yml`) that
+builds a fully static version of the site and publishes it to GitHub Pages
+every time you push to `main`.
+
+One-time setup, after the repository exists on GitHub:
+
+1. On github.com, open the repository → **Settings** → **Pages**.
+2. Under "Build and deployment," set **Source** to **GitHub Actions**.
+3. Push to `main` (or click **Actions** → "Deploy to GitHub Pages" →
+   "Run workflow"). After a minute or two the site is live at
+   `https://YOURUSERNAME.github.io/REPOSITORY-NAME/`.
+
+How the two versions relate:
+
+- **Local** (`npm run dev`) is the editing room: the admin works, and
+  changes to `data/` appear immediately.
+- **GitHub Pages** is the public exhibition: visitors get the identical
+  search experience (matching runs in their browser), but there is no
+  admin — the admin page there explains that editing happens locally.
+
+So the rhythm is: add and verify entries locally → `git add data/` →
+`git commit` → `git push` → the public site rebuilds itself.
+
 ## Verifying sources
 
 See `SOURCES.md` for the verification status of every seeded link.
